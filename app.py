@@ -57,21 +57,22 @@ col2.metric("Em andamento", (df['status'] == "Em andamento").sum())
 col3.metric("Finalizados", (df['status'] == "Finalizado").sum())
 col4.metric("A iniciar (7 dias)", (df['status'] == "Inicia em breve").sum())
 
-# 🚨 ALERTAS VISUAIS
+# 🚨 ALERTA VISUAL
 alertas = df[df['status'] == "Inicia em breve"]
-
 if not alertas.empty:
     st.warning(f"⚠️ {len(alertas)} exercício(s) iniciam nos próximos 7 dias")
 
-# 📊 GANTT AGRUPADO
+# =========================
+# 📊 GANTT (CORRIGIDO)
+# =========================
+
 fig = px.timeline(
     df,
     x_start="INICIO",
     x_end="FIM",
-    y="EXERCÍCIO",
+    y=df["TRIGRAMA"] + " | " + df["EXERCÍCIO"],
     color="status",
-    facet_row="TRIGRAMA",
-    hover_data=["TIPO"],
+    hover_data=["TRIGRAMA", "TIPO"],
     color_discrete_map={
         "Previsto": "#1976D2",
         "Em andamento": "#2E7D32",
@@ -91,7 +92,7 @@ fig.add_vline(
     line_color="#FFD600"
 )
 
-# 🔥 VISUAL
+# 🔥 MELHORIAS VISUAIS
 fig.update_traces(marker_line_width=1, marker_line_color="black")
 
 fig.update_xaxes(tickformat="%b %Y")
@@ -107,13 +108,12 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 # =========================
-# 📅 VISÃO MENSAL (HEATMAP)
+# 📅 VISÃO MENSAL
 # =========================
 
 st.subheader("📅 Carga operacional por mês")
 
 df_heat = df.copy()
-
 df_heat['mes'] = df_heat['INICIO'].dt.to_period('M').astype(str)
 
 heatmap = df_heat.groupby(['TRIGRAMA', 'mes']).size().reset_index(name='quantidade')
