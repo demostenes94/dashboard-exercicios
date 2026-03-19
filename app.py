@@ -23,7 +23,7 @@ today = pd.to_datetime(datetime.today().date())
 # 🎯 STATUS
 def get_status(row):
     if today < row['INICIO']:
-        return "Antes"
+        return "Previsto"
     elif row['INICIO'] <= today <= row['FIM']:
         return "Em andamento"
     else:
