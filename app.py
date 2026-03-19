@@ -66,18 +66,21 @@ fig = px.timeline(
     color="status",
     hover_data=["TRIGRAMA", "TIPO"],
     color_discrete_map={
-        "Previsto": "#1E88E5",
-        "Em andamento": "#43A047",
-        "Finalizado": "#E53935"
+    "Previsto": "#1565C0",       # azul forte
+    "Em andamento": "#2E7D32",   # verde escuro
+    "Finalizado": "#C62828"      # vermelho mais forte
     }
 )
+
+fig.update_yaxes(categoryorder="total ascending")
 
 # 🔥 LINHA DO "HOJE"
 fig.add_vline(
     x=today,
     line_width=2,
     line_dash="dash",
-    line_color="yellow"
+    line_color="#FFD600"
+    line_width=3
 )
 
 fig.update_yaxes(autorange="reversed")
