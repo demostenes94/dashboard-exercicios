@@ -121,7 +121,7 @@ st.plotly_chart(fig, use_container_width=True)
 # =========================
 # 📊 MISSÕES POR TRIGRAMA
 # =========================
-st.subheader("📊 Total de exercícios por TRIGRAMA")
+st.subheader("📊 Total de exercícios por OCE")
 
 df_total = df.groupby('TRIGRAMA').size().reset_index(name='quantidade')
 
