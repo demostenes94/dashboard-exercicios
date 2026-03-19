@@ -5,19 +5,25 @@ import plotly.express as px
 
 st.set_page_config(layout="wide")
 
+# =========================
 # 🔗 GOOGLE SHEETS
+# =========================
 sheet_id = "1RqFBXSu48Mr9y5ocR291v5A7H2sXKJDFG1Hfg6k6UO4"
 url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
 
 df = pd.read_csv(url)
 
+# =========================
 # 🔧 TRATAMENTO
+# =========================
 df['INICIO'] = pd.to_datetime(df['INICIO'], dayfirst=True)
 df['FIM'] = pd.to_datetime(df['FIM'], dayfirst=True)
 
 today = pd.to_datetime(datetime.today().date())
 
-# 🎯 STATUS COM ALERTA
+# =========================
+# 🎯 STATUS INTELIGENTE
+# =========================
 def get_status(row):
     dias = (row['INICIO'] - today).days
     if dias >= 0 and dias <= 7:
@@ -31,7 +37,9 @@ def get_status(row):
 
 df['status'] = df.apply(get_status, axis=1)
 
+# =========================
 # 🔎 FILTROS
+# =========================
 st.sidebar.header("Filtros")
 
 trigram = st.sidebar.multiselect(
@@ -42,14 +50,20 @@ trigram = st.sidebar.multiselect(
 
 df = df[df['TRIGRAMA'].isin(trigram)]
 
-# 🔥 ORDENAÇÃO INTELIGENTE
+# =========================
+# 🔥 ORDENAÇÃO
+# =========================
 df = df.sort_values(by=["TRIGRAMA", "INICIO"])
 
+# =========================
 # 🧠 TÍTULO
+# =========================
 st.title("📊 Painel de Exercícios")
 st.markdown("### Situação operacional dos exercícios")
 
+# =========================
 # 📊 KPIs
+# =========================
 col1, col2, col3, col4 = st.columns(4)
 
 col1.metric("Total", len(df))
@@ -57,15 +71,17 @@ col2.metric("Em andamento", (df['status'] == "Em andamento").sum())
 col3.metric("Finalizados", (df['status'] == "Finalizado").sum())
 col4.metric("A iniciar (7 dias)", (df['status'] == "Inicia em breve").sum())
 
-# 🚨 ALERTA VISUAL
+# =========================
+# 🚨 ALERTAS
+# =========================
 alertas = df[df['status'] == "Inicia em breve"]
+
 if not alertas.empty:
     st.warning(f"⚠️ {len(alertas)} exercício(s) iniciam nos próximos 7 dias")
 
 # =========================
-# 📊 GANTT (CORRIGIDO)
+# 📊 GANTT LIMPO
 # =========================
-
 fig = px.timeline(
     df,
     x_start="INICIO",
@@ -81,10 +97,8 @@ fig = px.timeline(
     }
 )
 
-# 🔥 ALTURA DINÂMICA
 fig.update_layout(height=600 + (len(df) * 25))
 
-# 🔥 LINHA DO HOJE
 fig.add_vline(
     x=today,
     line_width=3,
@@ -92,11 +106,8 @@ fig.add_vline(
     line_color="#FFD600"
 )
 
-# 🔥 MELHORIAS VISUAIS
 fig.update_traces(marker_line_width=1, marker_line_color="black")
-
 fig.update_xaxes(tickformat="%b %Y")
-
 fig.update_yaxes(title=None)
 
 fig.update_layout(
@@ -108,15 +119,27 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 # =========================
-# 📅 VISÃO MENSAL
+# 📅 HEATMAP (QUANTIDADE)
 # =========================
-
-st.subheader("📅 Carga operacional por mês")
+st.subheader("📅 Quantidade de exercícios por mês")
 
 df_heat = df.copy()
-df_heat['mes'] = df_heat['INICIO'].dt.to_period('M').astype(str)
 
-heatmap = df_heat.groupby(['TRIGRAMA', 'mes']).size().reset_index(name='quantidade')
+df_expandido = []
+
+for _, row in df_heat.iterrows():
+    meses = pd.period_range(row['INICIO'], row['FIM'], freq='M')
+    
+    temp = pd.DataFrame({
+        'TRIGRAMA': row['TRIGRAMA'],
+        'mes': meses.astype(str)
+    })
+    
+    df_expandido.append(temp)
+
+df_expandido = pd.concat(df_expandido)
+
+heatmap = df_expandido.groupby(['TRIGRAMA', 'mes']).size().reset_index(name='quantidade')
 
 fig2 = px.density_heatmap(
     heatmap,
@@ -127,3 +150,18 @@ fig2 = px.density_heatmap(
 )
 
 st.plotly_chart(fig2, use_container_width=True)
+
+# =========================
+# 📊 GRÁFICO PARA BRIEFING
+# =========================
+st.subheader("📊 Distribuição de exercícios por mês")
+
+fig3 = px.bar(
+    heatmap,
+    x="mes",
+    y="quantidade",
+    color="TRIGRAMA",
+    barmode="stack"
+)
+
+st.plotly_chart(fig3, use_container_width=True)
