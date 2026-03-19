@@ -66,7 +66,7 @@ fig = px.timeline(
     color="status",
     hover_data=["TRIGRAMA", "TIPO"],
     color_discrete_map={
-        "Antes": "#1E88E5",
+        "Previsto": "#1E88E5",
         "Em andamento": "#43A047",
         "Finalizado": "#E53935"
     }
