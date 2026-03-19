@@ -119,31 +119,19 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 # =========================
-# 📅 HEATMAP (QUANTIDADE)
+# 📅 EXERCÍCIOS INICIADOS POR MÊS
 # =========================
-st.subheader("📅 Quantidade de exercícios por mês")
+st.subheader("📅 Exercícios iniciados por mês")
 
-df_heat = df.copy()
+df_mes = df.copy()
 
-df_expandido = []
+df_mes['mes_inicio'] = df_mes['INICIO'].dt.to_period('M').astype(str)
 
-for _, row in df_heat.iterrows():
-    meses = pd.period_range(row['INICIO'], row['FIM'], freq='M')
-    
-    temp = pd.DataFrame({
-        'TRIGRAMA': row['TRIGRAMA'],
-        'mes': meses.astype(str)
-    })
-    
-    df_expandido.append(temp)
-
-df_expandido = pd.concat(df_expandido)
-
-heatmap = df_expandido.groupby(['TRIGRAMA', 'mes']).size().reset_index(name='quantidade')
+heatmap_inicio = df_mes.groupby(['TRIGRAMA', 'mes_inicio']).size().reset_index(name='quantidade')
 
 fig2 = px.density_heatmap(
-    heatmap,
-    x="mes",
+    heatmap_inicio,
+    x="mes_inicio",
     y="TRIGRAMA",
     z="quantidade",
     color_continuous_scale="Blues"
@@ -154,11 +142,11 @@ st.plotly_chart(fig2, use_container_width=True)
 # =========================
 # 📊 GRÁFICO PARA BRIEFING
 # =========================
-st.subheader("📊 Distribuição de exercícios por mês")
+st.subheader("📊 Exercícios iniciados por mês")
 
 fig3 = px.bar(
-    heatmap,
-    x="mes",
+    heatmap_inicio,
+    x="mes_inicio",
     y="quantidade",
     color="TRIGRAMA",
     barmode="stack"
