@@ -15,14 +15,14 @@ df = pd.read_csv(url)
 df['INICIO'] = pd.to_datetime(df['INICIO'], dayfirst=True)
 df['FIM'] = pd.to_datetime(df['FIM'], dayfirst=True)
 
-# 🔥 ORDENAR POR DATA (melhor prática)
-df = df.sort_values(by="INICIO")
-
 today = pd.to_datetime(datetime.today().date())
 
-# 🎯 STATUS (com alerta opcional)
+# 🎯 STATUS COM ALERTA
 def get_status(row):
-    if today < row['INICIO']:
+    dias = (row['INICIO'] - today).days
+    if dias >= 0 and dias <= 7:
+        return "Inicia em breve"
+    elif today < row['INICIO']:
         return "Previsto"
     elif row['INICIO'] <= today <= row['FIM']:
         return "Em andamento"
@@ -31,14 +31,19 @@ def get_status(row):
 
 df['status'] = df.apply(get_status, axis=1)
 
-# 🔎 FILTRO
-trigram = st.multiselect(
-    "Filtrar TRIGRAMA",
+# 🔎 FILTROS
+st.sidebar.header("Filtros")
+
+trigram = st.sidebar.multiselect(
+    "TRIGRAMA",
     options=df['TRIGRAMA'].dropna().unique(),
     default=df['TRIGRAMA'].dropna().unique()
 )
 
 df = df[df['TRIGRAMA'].isin(trigram)]
+
+# 🔥 ORDENAÇÃO INTELIGENTE
+df = df.sort_values(by=["TRIGRAMA", "INICIO"])
 
 # 🧠 TÍTULO
 st.title("📊 Painel de Exercícios")
@@ -50,31 +55,35 @@ col1, col2, col3, col4 = st.columns(4)
 col1.metric("Total", len(df))
 col2.metric("Em andamento", (df['status'] == "Em andamento").sum())
 col3.metric("Finalizados", (df['status'] == "Finalizado").sum())
+col4.metric("A iniciar (7 dias)", (df['status'] == "Inicia em breve").sum())
 
-col4.metric(
-    "A iniciar (7 dias)",
-    ((df['INICIO'] - today).dt.days.between(0,7)).sum()
-)
+# 🚨 ALERTAS VISUAIS
+alertas = df[df['status'] == "Inicia em breve"]
 
-# 📊 GANTT
+if not alertas.empty:
+    st.warning(f"⚠️ {len(alertas)} exercício(s) iniciam nos próximos 7 dias")
+
+# 📊 GANTT AGRUPADO
 fig = px.timeline(
     df,
     x_start="INICIO",
     x_end="FIM",
     y="EXERCÍCIO",
     color="status",
-    hover_data=["TRIGRAMA", "TIPO"],
+    facet_row="TRIGRAMA",
+    hover_data=["TIPO"],
     color_discrete_map={
-        "Previsto": "#1565C0",
+        "Previsto": "#1976D2",
         "Em andamento": "#2E7D32",
-        "Finalizado": "#C62828"
+        "Finalizado": "#C62828",
+        "Inicia em breve": "#FF9800"
     }
 )
 
-# 🔥 ORDEM VISUAL
-fig.update_yaxes(categoryorder="total ascending")
+# 🔥 ALTURA DINÂMICA
+fig.update_layout(height=600 + (len(df) * 25))
 
-# 🔥 LINHA DO "HOJE" (CORRIGIDO)
+# 🔥 LINHA DO HOJE
 fig.add_vline(
     x=today,
     line_width=3,
@@ -82,17 +91,39 @@ fig.add_vline(
     line_color="#FFD600"
 )
 
-# 🔥 MELHORIAS VISUAIS
-fig.update_traces(
-    marker_line_width=1,
-    marker_line_color="black"
+# 🔥 VISUAL
+fig.update_traces(marker_line_width=1, marker_line_color="black")
+
+fig.update_xaxes(tickformat="%b %Y")
+
+fig.update_yaxes(title=None)
+
+fig.update_layout(
+    font=dict(size=12),
+    bargap=0.2,
+    legend_title_text="Status"
 )
 
-fig.update_xaxes(
-    tickformat="%b %Y"
-)
-
-fig.update_yaxes(autorange="reversed")
-
-# 📊 EXIBIR
 st.plotly_chart(fig, use_container_width=True)
+
+# =========================
+# 📅 VISÃO MENSAL (HEATMAP)
+# =========================
+
+st.subheader("📅 Carga operacional por mês")
+
+df_heat = df.copy()
+
+df_heat['mes'] = df_heat['INICIO'].dt.to_period('M').astype(str)
+
+heatmap = df_heat.groupby(['TRIGRAMA', 'mes']).size().reset_index(name='quantidade')
+
+fig2 = px.density_heatmap(
+    heatmap,
+    x="mes",
+    y="TRIGRAMA",
+    z="quantidade",
+    color_continuous_scale="Blues"
+)
+
+st.plotly_chart(fig2, use_container_width=True)
