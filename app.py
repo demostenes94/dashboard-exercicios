@@ -107,8 +107,13 @@ fig.add_vline(
 )
 
 fig.update_traces(marker_line_width=1, marker_line_color="black")
+
 fig.update_xaxes(tickformat="%b %Y")
-fig.update_yaxes(title=None)
+
+fig.update_yaxes(
+    title=None,
+    tickfont=dict(size=14)  # 👈 AQUI aumenta o tamanho
+)
 
 fig.update_layout(
     font=dict(size=12),
