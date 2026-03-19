@@ -119,37 +119,30 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 # =========================
-# 📅 EXERCÍCIOS INICIADOS POR MÊS
+# 📊 MISSÕES POR TRIGRAMA
 # =========================
-st.subheader("📅 Exercícios iniciados por mês")
+st.subheader("📊 Total de exercícios por TRIGRAMA")
 
-df_mes = df.copy()
+df_total = df.groupby('TRIGRAMA').size().reset_index(name='quantidade')
 
-df_mes['mes_inicio'] = df_mes['INICIO'].dt.to_period('M').astype(str)
+# ordenar do maior para o menor
+df_total = df_total.sort_values(by="quantidade", ascending=False)
 
-heatmap_inicio = df_mes.groupby(['TRIGRAMA', 'mes_inicio']).size().reset_index(name='quantidade')
-
-fig2 = px.density_heatmap(
-    heatmap_inicio,
-    x="mes_inicio",
-    y="TRIGRAMA",
-    z="quantidade",
+fig_total = px.bar(
+    df_total,
+    x="TRIGRAMA",
+    y="quantidade",
+    text="quantidade",
+    color="quantidade",
     color_continuous_scale="Blues"
 )
 
-st.plotly_chart(fig2, use_container_width=True)
-
-# =========================
-# 📊 GRÁFICO PARA BRIEFING
-# =========================
-st.subheader("📊 Exercícios iniciados por mês")
-
-fig3 = px.bar(
-    heatmap_inicio,
-    x="mes_inicio",
-    y="quantidade",
-    color="TRIGRAMA",
-    barmode="stack"
+fig_total.update_layout(
+    xaxis_title="TRIGRAMA",
+    yaxis_title="Quantidade de exercícios",
+    showlegend=False
 )
 
-st.plotly_chart(fig3, use_container_width=True)
+fig_total.update_traces(textposition="outside")
+
+st.plotly_chart(fig_total, use_container_width=True)
